@@ -5,7 +5,19 @@
     <link rel='stylesheet' href='/stylesheets/style.css' />
 </head>
 <body>
-    <form action="/signup" method="post">
+<h2>가입된 사용자</h2>
+<h2>가입된 사용자</h2>
+<% if (users && users.length) { %>
+    <ul>
+        <% users.forEach(u => { %>
+            <li><%= u.id %> - <%= u.email %> - <%= u.name %></li>
+        <% }) %>
+    </ul>
+<% } else { %>
+    <p>사용자가 없습니다.</p>
+<% } %>
+
+<form action="/signup" method="post">
         <input type="text" placeholder="email" name="email" />
         <input type="password" placeholder="password" name="password" />
         <input type="text" placeholder="name" name="name" />

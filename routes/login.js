@@ -1,6 +1,7 @@
 const express = require('express');
 const router =express.Router();
 const debug = require('debug')('app:login');
+const pool = require('../config/mysql');
 // login post
 router.post('/login', (req, res) => {
     const {email,password} = req.body;
@@ -14,13 +15,10 @@ router.post('/login', (req, res) => {
 });
 // 회원 가입 로직
 //
-router.post('/signup', (req, res) => {
-    const {email,password} = req.body;
+router.post('/signup', async (req, res) => {
+    const {email,password,name} = req.body;
     console.log('회원 가입 정보',req.body);
-    if(!email || !password ) {
-        debug('username or password is required', req.body);
-        return res.status(400).render('signup', {title:'signup',error:'username or password is required'});
-    }
+    await pool.query('insert into users(email,password,name,created_at) values(?,?,?,now())',[email,password,name])
     res.redirect('/login')
 })
 module.exports = router;
