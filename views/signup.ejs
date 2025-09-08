@@ -34,24 +34,24 @@
             return;
         }
         try{
-            const res = await fetch('/dublicate',{
+            const res = await fetch('/duplicate',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json'
 
                 },body:JSON.stringify({email})
             });
+            if(res.status == 401){
+                alert('중복된 아이디 입니다');
+                return;
+            }
             if(res.ok){
-                // 일단 통신은 완료 된 상태
                 const resData = await res.json();
                 if(resData.available){
                     alert('사용 가능한 이메일 입니다.');
                     duplicationBtn.innerHTML = '확인'
                     duplicationBtn.disabled = true; // 다시 버튼 누르는것을 방지 함
-                }else{
-                    alert('중복된 이메일 입니다.');
                 }
-
             }
         }catch (err){
             alert('네트워크에 오류가 발생했습니다.')

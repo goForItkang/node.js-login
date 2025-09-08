@@ -11,7 +11,6 @@ router.get('/login', function(req, res, next) {
 })
 router.get('/signup', async function(req, res, next) {
     const [rows] = await pool.query('select * from users');
-
     res.render('signup', { title: 'signup' , users:rows});
 })
 
