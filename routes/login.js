@@ -6,16 +6,18 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 // 암호화
 // 복호화 개념
-
-
+require('dotenv').config();
+const secretKey = process.env.SECRET_KEY;
 // 암호화 함수
+if(!secretKey) throw new Error('secret key is required');
+if(!process.env.SECRET_KEY) throw new Error(secretKey);
+const KEY = Buffer.from(secretKey,'hex');
+if(KEY.length != 32) throw new Error('32비트가 아닙니다!');
 
-// env 파일로 변환 작업 해야함
-const KEY = crypto.randomBytes(32);
 function encrypt(planText){
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-cbc', KEY, iv);
-    const encrypted = Buffer.concat([cipher.update(planText), cipher.final()]);
+    const encrypted = Buffer.concat([cipher.update(planText,"utf-8"),cipher.final()]);
     return {
         iv : iv.toString('base64'),
         ciphertext : encrypted.toString('base64')
@@ -36,6 +38,7 @@ function decrypt({iv,encryptedText}){
 router.post('/login', (req, res) => {
     const {email,password} = req.body;
     console.log("로그인 정보",req.body);
+
     if(!email || !password ) {
         debug('username or password is required', req.body);
         return res.status(400).render('login', {title:'login',error:'username or password is required'});
@@ -46,9 +49,11 @@ router.post('/login', (req, res) => {
 // 회원 가입 로직
 router.post('/signup', async (req, res) => {
     const {email,password,name} = req.body;
+    debug('암호화 된 이메일',encrypt(email).ciphertext);
     // 패스워드 해쉬 암호화
     const hashedPassword = await bcrypt.hash(password);
-    const encodeEmail = encrypt(email);
+    const encodeEmailOne = encrypt(email);
+    const encodeEmail = JSON.stringify(encodeEmailOne);
     console.log('회원 가입 정보',req.body);
 
     await pool.query('insert into users(email,password,name,created_at) values(?,?,?,now())',[encodeEmail,hashedPassword,name])
