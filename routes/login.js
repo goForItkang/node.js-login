@@ -1,37 +1,36 @@
+require('dotenv').config();
 const express = require('express');
 const router =express.Router();
 const debug = require('debug')('app:login');
 const pool = require('../config/mysql');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+//  env 파일 가져오기
 // 암호화
 // 복호화 개념
-require('dotenv').config();
-const secretKey = process.env.SECRET_KEY;
-// 암호화 함수
-if(!secretKey) throw new Error('secret key is required');
-if(!process.env.SECRET_KEY) throw new Error(secretKey);
-const KEY = Buffer.from(secretKey,'hex');
-if(KEY.length != 32) throw new Error('32비트가 아닙니다!');
 
-function encrypt(planText){
-    const iv = crypto.randomBytes(16);
+const rawB64 = (process.env.SECRET_KEY || '').trim();
+if (!rawB64) {
+    throw new Error('SECRET_KEY_BASE64가 없습니다. 32바이트 키를 base64로 설정하세요.');
+}
+const KEY = Buffer.from(rawB64, 'base64');
+if (KEY.length !== 32) {
+    throw new Error('SECRET_KEY_BASE64 디코딩 결과가 32바이트가 아닙니다(AES-256).');
+}
+
+function encode(planText){
+    // iv 값 생성
+    const iv = crypto.randomBytes(16); // 랜덤값 생성
+    // chiper 생성
     const cipher = crypto.createCipheriv('aes-256-cbc', KEY, iv);
-    const encrypted = Buffer.concat([cipher.update(planText,"utf-8"),cipher.final()]);
+
+    const encryted = Buffer.concat([cipher.update(planText,'utf8'), cipher.final()]);
+
+    // return 값 반환
     return {
         iv : iv.toString('base64'),
-        ciphertext : encrypted.toString('base64')
+        encryptedText : encryted.toString('base64')
     }
-}
-// 복호화 함수
-function decrypt({iv,encryptedText}){
-    if(!iv || !encryptedText) return; // 받은 데이터가 없는 경우
-    const ivBuffer = Buffer.from(iv,'base64');
-    const encryptedTextBuffer = Buffer.from(encryptedText,'base64');
-
-    const decipher = crypto.createDecipheriv('aes-256-cbc', 'secretKey',ivBuffer);
-    const decrypted = Buffer.concat([decipher.update(encryptedTextBuffer), decipher.final()]);
-    return decrypted.toString();
 }
 
 // login post
@@ -49,14 +48,10 @@ router.post('/login', (req, res) => {
 // 회원 가입 로직
 router.post('/signup', async (req, res) => {
     const {email,password,name} = req.body;
-    debug('암호화 된 이메일',encrypt(email).ciphertext);
-    // 패스워드 해쉬 암호화
-    const hashedPassword = await bcrypt.hash(password);
-    const encodeEmailOne = encrypt(email);
-    const encodeEmail = JSON.stringify(encodeEmailOne);
-    console.log('회원 가입 정보',req.body);
+    debug('signup email', encode(email)); // 암호화 진행한 encode 암호화
 
-    await pool.query('insert into users(email,password,name,created_at) values(?,?,?,now())',[encodeEmail,hashedPassword,name])
+
+    // await pool.query('insert into users(email,password,name,created_at) values(?,?,?,now())',[encodeEmail,hashedPassword,name])
     res.redirect('/login')
 })
 // 이메일 중복확인 로직
